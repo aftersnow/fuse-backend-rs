@@ -197,6 +197,10 @@ const SUBMOUNTS: u64 = 0x800_0000;
 // Filesystem responsible for clearing security.capability xattr and setuid/setgid bits.
 const HANDLE_KILLPRIV_V2: u64 = 0x1000_0000;
 
+// In upstream kernel it's FUSE_SETXATTR_EXT, but in Anolis kernel 5.10 it's FD_PASSTHROUGH.
+// We will make it compitible when the fd passthrough patch is merged into the upstream.
+const FD_PASSTHROUGH: u64 = 0x2000_0000;
+
 // This flag indicates whether the fuse_init_in is extended
 const INIT_EXT: u64 = 0x4000_0000;
 
@@ -447,6 +451,9 @@ bitflags! {
         ///  -. create has O_TRUNC and FOPEN_IN_KILL_SUIDGID flag set.
         ///  -. write has WRITE_KILL_PRIV
         const HANDLE_KILLPRIV_V2 = HANDLE_KILLPRIV_V2;
+
+        /// Indicates the kernel support fuse fd passthrough.
+        const FD_PASSTHROUGH = FD_PASSTHROUGH;
 
         /// The fuse_init_in is extended.
         const INIT_EXT = INIT_EXT;
@@ -950,7 +957,7 @@ unsafe impl ByteValued for CreateIn {}
 pub struct OpenOut {
     pub fh: u64,
     pub open_flags: u32,
-    pub padding: u32,
+    pub passthrough: u32,
 }
 unsafe impl ByteValued for OpenOut {}
 

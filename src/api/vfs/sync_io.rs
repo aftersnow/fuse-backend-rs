@@ -292,7 +292,7 @@ impl FileSystem for Vfs {
         inode: VfsInode,
         flags: u32,
         fuse_flags: u32,
-    ) -> Result<(Option<u64>, OpenOptions)> {
+    ) -> Result<(Option<u64>, OpenOptions, Option<u32>)> {
         if self.opts.load().no_open {
             Err(Error::from_raw_os_error(libc::ENOSYS))
         } else {
@@ -300,7 +300,7 @@ impl FileSystem for Vfs {
                 (Left(fs), idata) => fs.open(ctx, idata.ino(), flags, fuse_flags),
                 (Right(fs), idata) => fs
                     .open(ctx, idata.ino(), flags, fuse_flags)
-                    .map(|(h, opt)| (h.map(Into::into), opt)),
+                    .map(|(h, opt, passthrough)| (h.map(Into::into), opt, passthrough)),
             }
         }
     }
@@ -311,16 +311,16 @@ impl FileSystem for Vfs {
         parent: VfsInode,
         name: &CStr,
         args: CreateIn,
-    ) -> Result<(Entry, Option<u64>, OpenOptions)> {
+    ) -> Result<(Entry, Option<u64>, OpenOptions, Option<u32>)> {
         validate_path_component(name)?;
 
         match self.get_real_rootfs(parent)? {
             (Left(fs), idata) => fs.create(ctx, idata.ino(), name, args),
             (Right(fs), idata) => {
                 fs.create(ctx, idata.ino(), name, args)
-                    .map(|(mut a, b, c)| {
+                    .map(|(mut a, b, c, d)| {
                         a.inode = self.convert_inode(idata.fs_idx(), a.inode)?;
-                        Ok((a, b, c))
+                        Ok((a, b, c, d))
                     })?
             }
         }
